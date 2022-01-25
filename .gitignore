@@ -1,0 +1,9 @@
+.DS_Store
+Thumbs.db
+/.idea/
+/bitrix/
+upload
+images
+/local/vendor/
+/local/modules/sprint.migration
+composer.lock
