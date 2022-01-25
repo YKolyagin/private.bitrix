@@ -36,8 +36,8 @@ $aMenuLinks = Array(
 		"" 
 	),
 	Array(
-		"Салоны", 
-		"/salons/", 
+		"cards", 
+		"/cards.php", 
 		Array(), 
 		Array(), 
 		"" 
