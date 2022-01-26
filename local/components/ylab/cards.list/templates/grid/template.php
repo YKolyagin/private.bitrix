@@ -3,7 +3,6 @@
 }?>
 
 <?php
-$filterID = $arResult['GRID_ID'];
 $APPLICATION->IncludeComponent(
     'bitrix:main.ui.filter',
     '',

@@ -48,7 +48,7 @@ class CardsListComponent extends CBitrixComponent
      */
     public function executeComponent()
     {
-        $this->idIBlock = $this->arParams['IBLOCK_ID'];
+        $this->idIBlock = self::getIBlockIdByCode($this->arParams['IBLOCK_CODE']);
 
         if ($this->templateName == 'grid') {
             $this->showByGrid();
@@ -78,7 +78,8 @@ class CardsListComponent extends CBitrixComponent
             false,
             [
                 "nPageSize" => $this->getGridNav()->getLimit(),
-                "iNumPage" => $this->getGridNav()->getCurrentPage()],
+                "iNumPage" => $this->getGridNav()->getCurrentPage()
+            ],
             [
                 'ID',
                 'IBLOCK_ID',
@@ -91,7 +92,6 @@ class CardsListComponent extends CBitrixComponent
             ],
         );
         $this->getGridNav()->setRecordCount($elements->SelectedRowsCount());
-        //printr($elements->SelectedRowsCount());
 
 
         while ($element = $elements->GetNext()) {
@@ -244,7 +244,6 @@ class CardsListComponent extends CBitrixComponent
                 'id' => 'CARD_TOTAL',
                 'name' => Loc::getMessage('YLAB.CARD.LIST.CLASS.TOTAL'),
                 'default' => true,
-                //'sort' => 'PROPERTY_CARD_TOTAL',
             ],
         ];
     }
@@ -338,7 +337,6 @@ class CardsListComponent extends CBitrixComponent
     {
         if ($this->gridNav === null) {
             $this->gridNav = new PageNavigation($this->getGridId());
-            $this->gridNav->setCurrentPage($this->getObGridParams()->GetNavParams()['nPageSize']);
             $this->gridNav->allowAllRecords(true)->setPageSize($this->getObGridParams()->GetNavParams()['nPageSize'])
                 ->initFromUri();
         }
