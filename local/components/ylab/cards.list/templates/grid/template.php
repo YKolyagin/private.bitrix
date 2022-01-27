@@ -1,9 +1,9 @@
 <?php if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED !== true) {
     die();
-}
+}?>
 
-?>
-<?php $APPLICATION->includeComponent(
+<?php
+$APPLICATION->IncludeComponent(
     'bitrix:main.ui.filter',
     '',
     [
@@ -14,8 +14,7 @@
         'ENABLE_LIVE_SEARCH' => true,
         'ENABLE_LABEL' => true
     ],
-    $component
-); ?>
+);?>
 
 <div class="transport-action-bar">
     <a href="" class="ui-btn ui-btn-primary ui-btn-icon-add"
@@ -38,11 +37,9 @@
             'AJAX_MODE' => 'Y',
             'AJAX_ID' => CAjax::getComponentID('bitrix:main.ui.grid', '.default', ''),
             'PAGE_SIZES' => [
-                ['NAME' => '5', 'VALUE' => '5'],
-                ['NAME' => '10', 'VALUE' => '10'],
-                ['NAME' => '20', 'VALUE' => '20'],
-                ['NAME' => '50', 'VALUE' => '50'],
-                ['NAME' => '100', 'VALUE' => '100']
+                ['NAME' => '1', 'VALUE' => '1'],
+                ['NAME' => '2', 'VALUE' => '2'],
+                ['NAME' => '3', 'VALUE' => '3']
             ],
             'AJAX_OPTION_JUMP' => 'N',
             'SHOW_CHECK_ALL_CHECKBOXES' => false,

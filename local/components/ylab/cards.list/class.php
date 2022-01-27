@@ -68,28 +68,46 @@ class CardsListComponent extends CBitrixComponent
     {
         $result = [];
 
-        $arFilter = [
-            'ACTIVE' => 'Y',
-            'IBLOCK_ID' => $this->idIBlock,
-        ];
+        $arFilter = $this->getGridFilterValues();
 
+        $grid_options = new GridOptions($this->getGridId());
+        $sort = $grid_options->GetSorting([]);
         $elements = CIBlockElement::GetList(
-            [],
+            $sort['sort'],
             $arFilter,
             false,
-            false,
-            ['ID', 'IBLOCK_ID', 'PROPERTY_CARD_NUMBER', 'PROPERTY_CARD_USER', 'PROPERTY_CARD_TYPE']
+            [
+                "nPageSize" => $this->getGridNav()->getLimit(),
+                "iNumPage" => $this->getGridNav()->getCurrentPage()
+            ],
+            [
+                'ID',
+                'IBLOCK_ID',
+                'PROPERTY_CARD_NUMBER',
+                'PROPERTY_CARD_USER',
+                'PROPERTY_CARD_TYPE',
+                'PROPERTY_CARD_PRICE',
+                'PROPERTY_CARD_TIME_LIMIT',
+                'PROPERTY_CARD_DATE',
+            ],
         );
+        $this->getGridNav()->setRecordCount($elements->SelectedRowsCount());
 
 
         while ($element = $elements->GetNext()) {
             $cardSecret = md5($element['PROPERTY_CARD_NUMBER_VALUE']);
+            $cardPrice = $element['PROPERTY_CARD_PRICE_VALUE'];
+            $cardTimeLimit = $element['PROPERTY_CARD_TIME_LIMIT_VALUE'];
 
             $result[] = [
                 'ID' => $element['ID'],
                 'CARD_NUMBER' => $element['PROPERTY_CARD_NUMBER_VALUE'],
                 'CARD_USER' => $element['PROPERTY_CARD_USER_VALUE'],
                 'CARD_TYPE' => $element['PROPERTY_CARD_TYPE_VALUE'],
+                'CARD_PRICE' => $cardPrice,
+                'CARD_TIME_LIMIT' => $cardTimeLimit,
+                'CARD_DATE' => $element['PROPERTY_CARD_DATE_VALUE'],
+                'CARD_TOTAL' => $cardPrice * $cardTimeLimit,
                 'CARD_SECRET' => $cardSecret,
             ];
         }
@@ -133,9 +151,23 @@ class CardsListComponent extends CBitrixComponent
                 'CARD_USER' => $arItem['CARD_USER'],
                 'CARD_TYPE' => $arItem['CARD_TYPE'],
                 'CARD_SECRET' => $arItem['CARD_SECRET'],
+                'CARD_PRICE' => $arItem['CARD_PRICE'],
+                'CARD_TIME_LIMIT' => $arItem['CARD_TIME_LIMIT'],
+                'CARD_DATE' => $arItem['CARD_DATE'],
+                'CARD_TOTAL' => $arItem['CARD_TOTAL'],
             ];
 
-            //$arGridElement['action'] = ....
+            $arGridElement['actions'] = [ //Действия над ними
+                [
+                    'text'    => 'Редактировать',
+                    'onclick' => ''
+                ],
+                [
+                    'text'    => 'Удалить',
+                    'onclick' => ''
+                ]
+
+            ];
             $arBody[] = $arGridElement;
         }
 
@@ -176,15 +208,41 @@ class CardsListComponent extends CBitrixComponent
                 'id' => 'CARD_USER',
                 'name' => Loc::getMessage('YLAB.CARD.LIST.CLASS.USER'),
                 'default' => true,
+                'sort' => 'PROPERTY_CARD_USER',
             ],
             [
                 'id' => 'CARD_TYPE',
                 'name' => Loc::getMessage('YLAB.CARD.LIST.CLASS.TYPE'),
                 'default' => true,
+                'sort' => 'PROPERTY_CARD_TYPE',
             ],
             [
                 'id' => 'CARD_SECRET',
                 'name' => Loc::getMessage('YLAB.CARD.LIST.CLASS.SECRET'),
+                'default' => true,
+                'sort' => 'PROPERTY_CARD_SECRET',
+            ],
+            [
+                'id' => 'CARD_PRICE',
+                'name' => Loc::getMessage('YLAB.CARD.LIST.CLASS.PRICE'),
+                'default' => true,
+                'sort' => 'PROPERTY_CARD_PRICE',
+            ],
+            [
+                'id' => 'CARD_TIME_LIMIT',
+                'name' => Loc::getMessage('YLAB.CARD.LIST.CLASS.TIME_LIMIT'),
+                'default' => true,
+                'sort' => 'PROPERTY_CARD_TIME_LIMIT',
+            ],
+            [
+                'id' => 'CARD_DATE',
+                'name' => Loc::getMessage('YLAB.CARD.LIST.CLASS.DATE'),
+                'default' => true,
+                'sort' => 'PROPERTY_CARD_DATE',
+            ],
+            [
+                'id' => 'CARD_TOTAL',
+                'name' => Loc::getMessage('YLAB.CARD.LIST.CLASS.TOTAL'),
                 'default' => true,
             ],
         ];
@@ -227,6 +285,36 @@ class CardsListComponent extends CBitrixComponent
                 'name' => 'ID',
                 'type' => 'number'
             ],
+            [
+                'id' => 'CARD_NUMBER',
+                'name' => 'Номер карты',
+                'type' => 'number'
+            ],
+            [
+                'id' => 'CARD_USER',
+                'name' => 'Владелец карты',
+                'type' => 'string'
+            ],
+            [
+                'id' => 'CARD_TYPE',
+                'name' => 'Тип карты',
+                'type' => 'string'
+            ],
+            [
+                'id' => 'CARD_PRICE',
+                'name' => 'Стоимость карты',
+                'type' => 'number'
+            ],
+            [
+                'id' => 'CARD_TIME_LIMIT',
+                'name' => 'Срок действия карты',
+                'type' => 'number'
+            ],
+            [
+                'id' => 'CARD_DATE',
+                'name' => 'Дата окончания карты',
+                'type' => 'date'
+            ],
         ];
     }
 
@@ -252,7 +340,6 @@ class CardsListComponent extends CBitrixComponent
             $this->gridNav->allowAllRecords(true)->setPageSize($this->getObGridParams()->GetNavParams()['nPageSize'])
                 ->initFromUri();
         }
-
         return $this->gridNav;
     }
 
@@ -294,11 +381,40 @@ class CardsListComponent extends CBitrixComponent
             $arFilter['<=ID'] = (int)$arFilterData['ID_to'];
         }
 
-        if (!empty($arFilterData['PROPERTY_PRICE_VALUE_from'])) {
-            $arFilter['>=PROPERTY_PRICE_VALUE'] = (int)$arFilterData['PROPERTY_PRICE_VALUE_from'];
+        if (!empty($arFilterData['CARD_PRICE_from'])) {
+            $arFilter['>=PROPERTY_CARD_PRICE'] = (int)$arFilterData['CARD_PRICE_from'];
         }
-        if (!empty($arFilterData['PROPERTY_PRICE_VALUE_to'])) {
-            $arFilter['<=PROPERTY_PRICE_VALUE'] = (int)$arFilterData['PROPERTY_PRICE_VALUE_to'];
+        if (!empty($arFilterData['CARD_PRICE_to'])) {
+            $arFilter['<=PROPERTY_CARD_PRICE'] = (int)$arFilterData['CARD_PRICE_to'];
+        }
+
+        if (!empty($arFilterData['CARD_NUMBER_from'])) {
+            $arFilter['>=PROPERTY_CARD_NUMBER'] = (int)$arFilterData['CARD_NUMBER_from'];
+        }
+        if (!empty($arFilterData['CARD_NUMBER_to'])) {
+            $arFilter['<=PROPERTY_CARD_NUMBER'] = (int)$arFilterData['CARD_NUMBER_to'];
+        }
+
+        if (!empty($arFilterData['CARD_USER'])) {
+            $arFilter['PROPERTY_CARD_USER'] = "%" . $arFilterData['CARD_USER'] . "%";
+        }
+
+        if (!empty($arFilterData['CARD_TYPE'])) {
+            $arFilter['PROPERTY_CARD_TYPE_VALUE'] = "%" . $arFilterData['CARD_TYPE'] . "%";
+        }
+
+        if (!empty($arFilterData['CARD_TIME_LIMIT_from'])) {
+            $arFilter['>=PROPERTY_CARD_NUMBER'] = (int)$arFilterData['CARD_TIME_LIMIT_from'];
+        }
+        if (!empty($arFilterData['CARD_TIME_LIMIT_to'])) {
+            $arFilter['<=PROPERTY_CARD_TIME_LIMIT'] = (int)$arFilterData['CARD_TIME_LIMIT_to'];
+        }
+
+        if (!empty($arFilterData['CARD_DATE_from'])) {
+            $arFilter['>=PROPERTY_CARD_DATE'] = FormatDateFromDB($arFilterData['CARD_DATE_from'], 'YYYY-MM-DD');
+        }
+        if (!empty($arFilterData['CARD_DATE_to'])) {
+            $arFilter['<=PROPERTY_CARD_DATE'] = FormatDateFromDB($arFilterData['CARD_DATE_to'], 'YYYY-MM-DD');
         }
         return $arFilter;
     }
