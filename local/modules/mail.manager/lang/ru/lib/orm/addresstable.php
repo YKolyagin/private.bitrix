@@ -1,0 +1,2 @@
+<?
+$MESS["YLAB_MAIL_MANAGER_PROFILE_TITLE_FIELD"] = "Заголовок";
